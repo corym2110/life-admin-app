@@ -8,9 +8,27 @@ function lastDayOfMonth(year: number, month0: number): number {
   return new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
 }
 
-function addDays(dateStr: string, days: number): string {
+export function addDays(dateStr: string, days: number): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   return toISODate(new Date(Date.UTC(year, month - 1, day + days)));
+}
+
+export function todayISODate(): string {
+  return toISODate(new Date());
+}
+
+/** Whole days from `fromDate` to `toDate` (negative if `toDate` is earlier). */
+export function daysBetween(fromDate: string, toDate: string): number {
+  const [fy, fm, fd] = fromDate.split('-').map(Number);
+  const [ty, tm, td] = toDate.split('-').map(Number);
+  const fromUTC = Date.UTC(fy, fm - 1, fd);
+  const toUTC = Date.UTC(ty, tm - 1, td);
+  return Math.round((toUTC - fromUTC) / 86_400_000);
+}
+
+export function endOfMonth(dateStr: string): string {
+  const [year, month] = dateStr.split('-').map(Number);
+  return toISODate(new Date(Date.UTC(year, month, 0)));
 }
 
 // Adding months can overflow past the end of a shorter target month

@@ -1,98 +1,135 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { Platform, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSQLiteContext } from 'expo-sqlite';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { ItemRow } from '@/components/item-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { todayISODate } from '@/data/dueDate';
+import { groupItemsForHome, type HomeSections } from '@/data/homeSections';
+import { listItems } from '@/data/items';
+import { useTheme } from '@/hooks/use-theme';
+import type { Item } from '@/types/item';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+const SECTION_CONFIG: { key: keyof HomeSections; title: string; emptyText: string }[] = [
+  { key: 'overdue', title: 'Overdue', emptyText: 'Nothing overdue.' },
+  { key: 'dueThisMonth', title: 'Due this month', emptyText: 'Nothing due this month.' },
+  { key: 'comingUp', title: 'Coming up', emptyText: 'Nothing in the next 90 days.' },
+];
 
 export default function HomeScreen() {
+  const db = useSQLiteContext();
+  const theme = useTheme();
+  const safeAreaInsets = useSafeAreaInsets();
+  const insets = {
+    ...safeAreaInsets,
+    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
+  };
+
+  const [items, setItems] = useState<Item[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    listItems(db).then((rows) => {
+      if (!cancelled) setItems(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
+
+  const today = todayISODate();
+  const sections = items ? groupItemsForHome(items, today) : null;
+
+  const contentPlatformStyle = Platform.select({
+    android: {
+      paddingTop: insets.top,
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+      paddingBottom: insets.bottom,
+    },
+    web: {
+      paddingTop: Spacing.six,
+      paddingBottom: Spacing.four,
+    },
+  });
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: theme.background }]}
+      contentInset={insets}
+      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="subtitle">Home</ThemedText>
+        </ThemedView>
+
+        {!sections ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
+            Loading…
           </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        ) : (
+          <ThemedView style={styles.sectionsWrapper}>
+            {SECTION_CONFIG.map(({ key, title, emptyText }) => {
+              const sectionItems = sections[key];
+              return (
+                <ThemedView key={key} style={styles.section}>
+                  <ThemedText type="smallBold" themeColor="textSecondary">
+                    {sectionItems.length > 0 ? `${title.toUpperCase()} (${sectionItems.length})` : title.toUpperCase()}
+                  </ThemedText>
+                  {sectionItems.length === 0 ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {emptyText}
+                    </ThemedText>
+                  ) : (
+                    <ThemedView style={styles.rowsWrapper}>
+                      {sectionItems.map((item) => (
+                        <ItemRow key={item.id} item={item} today={today} />
+                      ))}
+                    </ThemedView>
+                  )}
+                </ThemedView>
+              );
+            })}
+          </ThemedView>
+        )}
+      </ThemedView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  contentContainer: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+  },
+  container: {
+    maxWidth: MaxContentWidth,
+    flexGrow: 1,
+  },
+  header: {
     paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    paddingTop: Spacing.six,
+    paddingBottom: Spacing.three,
   },
-  title: {
+  centerText: {
     textAlign: 'center',
+    paddingTop: Spacing.six,
   },
-  code: {
-    textTransform: 'uppercase',
+  sectionsWrapper: {
+    gap: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.four,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  section: {
+    gap: Spacing.two,
+  },
+  rowsWrapper: {
+    gap: Spacing.two,
   },
 });

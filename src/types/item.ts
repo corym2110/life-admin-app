@@ -29,3 +29,11 @@ export interface HistoryEntry {
 }
 
 export const DEFAULT_REMINDER_OFFSETS = [30, 7, 1];
+
+export const CATEGORY_LABELS: Record<Category, string> = {
+  home: 'Home',
+  car: 'Car',
+  documents: 'Documents',
+  subscriptions: 'Subscriptions',
+  health: 'Health',
+};
