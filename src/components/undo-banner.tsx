@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { BottomTabInset, Radius, Spacing } from '@/constants/theme';
 
 type UndoRequest = {
   message: string;
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     left: Spacing.four,
     right: Spacing.four,
     bottom: BottomTabInset + Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
     flexDirection: 'row',

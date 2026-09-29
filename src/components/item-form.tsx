@@ -6,10 +6,10 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { DateField } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { persistPickedPhoto } from '@/data/photos';
 import { useTheme } from '@/hooks/use-theme';
-import { CATEGORY_LABELS, type Category, type RepeatUnit } from '@/types/item';
+import { CATEGORY_COLORS, CATEGORY_LABELS, type Category, type RepeatUnit } from '@/types/item';
 
 const CATEGORIES: Category[] = ['home', 'car', 'documents', 'subscriptions', 'health'];
 const REPEAT_UNITS: RepeatUnit[] = ['day', 'week', 'month', 'year'];
@@ -112,15 +112,24 @@ export function ItemForm({
           Category
         </ThemedText>
         <View style={styles.chipRow}>
-          {CATEGORIES.map((category) => (
-            <Pressable key={category} onPress={() => update('category', category)}>
-              <ThemedView
-                type={values.category === category ? 'backgroundSelected' : 'backgroundElement'}
-                style={styles.chip}>
-                <ThemedText type="small">{CATEGORY_LABELS[category]}</ThemedText>
-              </ThemedView>
-            </Pressable>
-          ))}
+          {CATEGORIES.map((category) => {
+            const selected = values.category === category;
+            const color = CATEGORY_COLORS[category];
+            return (
+              <Pressable key={category} onPress={() => update('category', category)}>
+                <View
+                  style={[
+                    styles.categoryChip,
+                    { backgroundColor: selected ? `${color}33` : theme.backgroundElement },
+                  ]}>
+                  <View style={[styles.categoryDot, { backgroundColor: color }]} />
+                  <ThemedText type="small" style={selected ? { color } : undefined}>
+                    {CATEGORY_LABELS[category]}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
 
@@ -227,9 +236,11 @@ export function ItemForm({
       )}
 
       <Pressable onPress={handleSubmit} disabled={saving}>
-        <ThemedView type="backgroundSelected" style={styles.submitButton}>
-          <ThemedText type="smallBold">{saving ? 'Saving…' : submitLabel}</ThemedText>
-        </ThemedView>
+        <View style={[styles.submitButton, { backgroundColor: theme.accent }]}>
+          <ThemedText type="smallBold" style={styles.submitLabel}>
+            {saving ? 'Saving…' : submitLabel}
+          </ThemedText>
+        </View>
       </Pressable>
     </ScrollView>
   );
@@ -244,7 +255,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   textInput: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     fontSize: 16,
@@ -254,7 +265,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   numberInput: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     width: 64,
@@ -268,7 +279,20 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
+    borderRadius: Radius.pill,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.pill,
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: Radius.pill,
   },
   repeatToggleRow: {
     flexDirection: 'row',
@@ -292,19 +316,22 @@ const styles = StyleSheet.create({
   photoPreview: {
     width: 96,
     height: 96,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
   },
   photoPicker: {
     paddingVertical: Spacing.five,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     alignItems: 'center',
   },
   error: {
-    color: '#D14343',
+    color: '#FB7185',
   },
   submitButton: {
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     alignItems: 'center',
+  },
+  submitLabel: {
+    color: '#FFFFFF',
   },
 });

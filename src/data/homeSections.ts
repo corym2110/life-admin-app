@@ -8,6 +8,12 @@ export interface HomeSections {
   comingUp: Item[];
 }
 
+export const SECTION_COLORS: Record<keyof HomeSections, string> = {
+  overdue: '#FB7185',
+  dueThisMonth: '#5B8CFF',
+  comingUp: '#34D399',
+};
+
 const COMING_UP_HORIZON_DAYS = 90;
 
 function byDueDateAscending(a: Item, b: Item): number {

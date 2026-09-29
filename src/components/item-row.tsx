@@ -1,10 +1,10 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { formatDueLabel } from '@/data/homeSections';
-import { CATEGORY_LABELS, type Item } from '@/types/item';
+import { CATEGORY_COLORS, CATEGORY_LABELS, type Item } from '@/types/item';
 
 export function ItemRow({ item, today, onPress }: { item: Item; today?: string; onPress?: () => void }) {
   const overdue = today !== undefined && item.dueDate < today;
@@ -12,6 +12,7 @@ export function ItemRow({ item, today, onPress }: { item: Item; today?: string; 
   return (
     <Pressable onPress={onPress}>
       <ThemedView type="backgroundElement" style={styles.row}>
+        <View style={[styles.dot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
         <ThemedView style={styles.info}>
           <ThemedText type="default" numberOfLines={1}>
             {item.title}
@@ -38,8 +39,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     gap: Spacing.three,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: Radius.pill,
   },
   info: {
     flex: 1,
@@ -47,6 +53,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   overdue: {
-    color: '#D14343',
+    color: '#FB7185',
   },
 });

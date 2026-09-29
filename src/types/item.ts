@@ -37,3 +37,11 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   subscriptions: 'Subscriptions',
   health: 'Health',
 };
+
+export const CATEGORY_COLORS: Record<Category, string> = {
+  home: '#2DD4BF',
+  car: '#5B8CFF',
+  documents: '#A78BFA',
+  subscriptions: '#F472B6',
+  health: '#34D399',
+};

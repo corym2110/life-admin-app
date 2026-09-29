@@ -8,10 +8,10 @@ import { formatFriendlyDate } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useUndoBanner } from '@/components/undo-banner';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { deleteItem, getItem, listHistoryForItem, markItemDone, restoreItem } from '@/data/items';
 import { useTheme } from '@/hooks/use-theme';
-import { CATEGORY_LABELS, type HistoryEntry, type Item } from '@/types/item';
+import { CATEGORY_COLORS, CATEGORY_LABELS, type HistoryEntry, type Item } from '@/types/item';
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -79,9 +79,12 @@ export default function ItemDetailScreen() {
       {item.photoUris[0] && <Image source={{ uri: item.photoUris[0] }} style={styles.photo} />}
 
       <ThemedText type="subtitle">{item.title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {CATEGORY_LABELS[item.category]} · Due {formatFriendlyDate(item.dueDate)}
-      </ThemedText>
+      <View style={styles.categoryRow}>
+        <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
+        <ThemedText type="small" themeColor="textSecondary">
+          {CATEGORY_LABELS[item.category]} · Due {formatFriendlyDate(item.dueDate)}
+        </ThemedText>
+      </View>
       {item.repeat && (
         <ThemedText type="small" themeColor="textSecondary">
           Repeats every {item.repeat.every} {item.repeat.unit}
@@ -92,9 +95,11 @@ export default function ItemDetailScreen() {
 
       <View style={styles.actionRow}>
         <Pressable onPress={handleMarkDone} style={styles.actionButton}>
-          <ThemedView type="backgroundSelected" style={styles.actionButtonInner}>
-            <ThemedText type="smallBold">Mark done</ThemedText>
-          </ThemedView>
+          <View style={[styles.actionButtonInner, { backgroundColor: theme.accent }]}>
+            <ThemedText type="smallBold" style={styles.markDoneText}>
+              Mark done
+            </ThemedText>
+          </View>
         </Pressable>
         <Pressable onPress={() => router.push(`/item/${item.id}/edit`)} style={styles.actionButton}>
           <ThemedView type="backgroundElement" style={styles.actionButtonInner}>
@@ -148,7 +153,17 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: 200,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.large,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: Radius.pill,
   },
   actionRow: {
     flexDirection: 'row',
@@ -160,11 +175,14 @@ const styles = StyleSheet.create({
   },
   actionButtonInner: {
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     alignItems: 'center',
   },
+  markDoneText: {
+    color: '#FFFFFF',
+  },
   deleteText: {
-    color: '#D14343',
+    color: '#FB7185',
   },
   historySection: {
     gap: Spacing.two,
@@ -172,7 +190,7 @@ const styles = StyleSheet.create({
   },
   historyRow: {
     padding: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     gap: Spacing.half,
   },
 });

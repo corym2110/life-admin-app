@@ -4,7 +4,7 @@ import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 function parseISODate(iso: string): Date {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   field: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
   },
   backdrop: {
     flex: 1,
@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
-    borderTopLeftRadius: Spacing.four,
-    borderTopRightRadius: Spacing.four,
+    borderTopLeftRadius: Radius.large,
+    borderTopRightRadius: Radius.large,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.six,
