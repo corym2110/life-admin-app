@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useCallback, useEffect, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ItemRow } from '@/components/item-row';
 import { ThemedText } from '@/components/themed-text';
@@ -10,6 +11,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { todayISODate } from '@/data/dueDate';
 import { groupItemsForHome, type HomeSections } from '@/data/homeSections';
 import { listItems } from '@/data/items';
+import { subscribeItemsChanged } from '@/data/itemsBus';
 import { useTheme } from '@/hooks/use-theme';
 import type { Item } from '@/types/item';
 
@@ -30,15 +32,15 @@ export default function HomeScreen() {
 
   const [items, setItems] = useState<Item[] | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    listItems(db).then((rows) => {
-      if (!cancelled) setItems(rows);
-    });
-    return () => {
-      cancelled = true;
-    };
+  const reload = useCallback(() => {
+    listItems(db).then(setItems);
   }, [db]);
+
+  useFocusEffect(reload);
+
+  // Also react to mutations that happen without a focus transition, like
+  // tapping Undo on the delete banner while still sitting on this screen.
+  useEffect(() => subscribeItemsChanged(reload), [reload]);
 
   const today = todayISODate();
   const sections = items ? groupItemsForHome(items, today) : null;
@@ -64,6 +66,11 @@ export default function HomeScreen() {
       <ThemedView style={styles.container}>
         <ThemedView style={styles.header}>
           <ThemedText type="subtitle">Home</ThemedText>
+          <Pressable onPress={() => router.push('/item/new')}>
+            <ThemedView type="backgroundElement" style={styles.addButton}>
+              <ThemedText type="smallBold">+ Add</ThemedText>
+            </ThemedView>
+          </Pressable>
         </ThemedView>
 
         {!sections ? (
@@ -86,7 +93,12 @@ export default function HomeScreen() {
                   ) : (
                     <ThemedView style={styles.rowsWrapper}>
                       {sectionItems.map((item) => (
-                        <ItemRow key={item.id} item={item} today={today} />
+                        <ItemRow
+                          key={item.id}
+                          item={item}
+                          today={today}
+                          onPress={() => router.push(`/item/${item.id}`)}
+                        />
                       ))}
                     </ThemedView>
                   )}
@@ -113,9 +125,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.six,
     paddingBottom: Spacing.three,
+  },
+  addButton: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
   },
   centerText: {
     textAlign: 'center',

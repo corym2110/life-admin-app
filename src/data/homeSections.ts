@@ -14,6 +14,12 @@ function byDueDateAscending(a: Item, b: Item): number {
   return a.dueDate.localeCompare(b.dueDate);
 }
 
+// A one-off item that's already been marked done has nothing left to remind
+// about — without this it would just sit in Overdue forever.
+function isFinishedOneOff(item: Item): boolean {
+  return item.repeat === null && item.lastDoneAt !== null;
+}
+
 /**
  * Splits items into the three Home screen buckets. Anything due further out
  * than the 90-day "coming up" horizon is intentionally left out of all three
@@ -26,6 +32,9 @@ export function groupItemsForHome(items: Item[], today: string = todayISODate())
   const sections: HomeSections = { overdue: [], dueThisMonth: [], comingUp: [] };
 
   for (const item of items) {
+    if (isFinishedOneOff(item)) {
+      continue;
+    }
     if (item.dueDate < today) {
       sections.overdue.push(item);
     } else if (item.dueDate <= monthEnd) {

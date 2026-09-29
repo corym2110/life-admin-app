@@ -4,6 +4,7 @@ import type { Category, HistoryEntry, Item, RepeatRule } from '@/types/item';
 import { DEFAULT_REMINDER_OFFSETS } from '@/types/item';
 
 import { computeNextDueDate } from './dueDate';
+import { notifyItemsChanged } from './itemsBus';
 
 function generateId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -91,6 +92,7 @@ export async function createItem(db: SQLiteDatabase, input: NewItemInput): Promi
     item.updatedAt
   );
 
+  notifyItemsChanged();
   return item;
 }
 
@@ -132,11 +134,46 @@ export async function updateItem(db: SQLiteDatabase, id: string, patch: ItemPatc
     id
   );
 
+  notifyItemsChanged();
   return updated;
 }
 
 export async function deleteItem(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM items WHERE id = ?', id);
+  notifyItemsChanged();
+}
+
+/** Re-inserts a previously deleted item and its history exactly as they were, for Undo. */
+export async function restoreItem(db: SQLiteDatabase, item: Item, history: HistoryEntry[] = []): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `INSERT INTO items
+        (id, title, category, due_date, repeat_every, repeat_unit, reminder_offsets, notes, photo_uris, last_done_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      item.id,
+      item.title,
+      item.category,
+      item.dueDate,
+      item.repeat?.every ?? null,
+      item.repeat?.unit ?? null,
+      JSON.stringify(item.reminderOffsets),
+      item.notes,
+      JSON.stringify(item.photoUris),
+      item.lastDoneAt,
+      item.createdAt,
+      item.updatedAt
+    );
+    for (const entry of history) {
+      await db.runAsync(
+        'INSERT INTO history (id, item_id, done_at, note) VALUES (?, ?, ?, ?)',
+        entry.id,
+        entry.itemId,
+        entry.doneAt,
+        entry.note
+      );
+    }
+  });
+  notifyItemsChanged();
 }
 
 export async function listHistoryForItem(db: SQLiteDatabase, itemId: string): Promise<HistoryEntry[]> {
@@ -180,5 +217,6 @@ export async function markItemDone(
     );
   });
 
+  notifyItemsChanged();
   return { ...existing, dueDate: nextDueDate, lastDoneAt: doneAt, updatedAt };
 }

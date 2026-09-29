@@ -55,6 +55,24 @@ describe('groupItemsForHome', () => {
     expect(sections.comingUp).toEqual([]);
   });
 
+  it('excludes a completed one-off item instead of leaving it overdue forever', () => {
+    const item = makeItem({ dueDate: '2026-06-01', repeat: null, lastDoneAt: '2026-06-02T00:00:00.000Z' });
+    const sections = groupItemsForHome([item], TODAY);
+    expect(sections.overdue).toEqual([]);
+    expect(sections.dueThisMonth).toEqual([]);
+    expect(sections.comingUp).toEqual([]);
+  });
+
+  it('keeps a completed repeating item, since its due date has already advanced', () => {
+    const item = makeItem({
+      dueDate: '2026-06-20',
+      repeat: { every: 1, unit: 'month' },
+      lastDoneAt: '2026-05-20T00:00:00.000Z',
+    });
+    const sections = groupItemsForHome([item], TODAY);
+    expect(sections.dueThisMonth).toEqual([item]);
+  });
+
   it('sorts each section by due date ascending', () => {
     const later = makeItem({ id: 'later', dueDate: '2026-06-28' });
     const sooner = makeItem({ id: 'sooner', dueDate: '2026-06-20' });
