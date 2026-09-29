@@ -5,6 +5,7 @@ import { DEFAULT_REMINDER_OFFSETS } from '@/types/item';
 
 import { computeNextDueDate } from './dueDate';
 import { notifyItemsChanged } from './itemsBus';
+import { cancelRemindersForItem, scheduleRemindersForItem } from './notifications';
 
 function generateId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -92,6 +93,7 @@ export async function createItem(db: SQLiteDatabase, input: NewItemInput): Promi
     item.updatedAt
   );
 
+  await scheduleRemindersForItem(item);
   notifyItemsChanged();
   return item;
 }
@@ -134,12 +136,14 @@ export async function updateItem(db: SQLiteDatabase, id: string, patch: ItemPatc
     id
   );
 
+  await scheduleRemindersForItem(updated);
   notifyItemsChanged();
   return updated;
 }
 
 export async function deleteItem(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM items WHERE id = ?', id);
+  await cancelRemindersForItem(id);
   notifyItemsChanged();
 }
 
@@ -173,6 +177,7 @@ export async function restoreItem(db: SQLiteDatabase, item: Item, history: Histo
       );
     }
   });
+  await scheduleRemindersForItem(item);
   notifyItemsChanged();
 }
 
@@ -217,6 +222,8 @@ export async function markItemDone(
     );
   });
 
+  const updated: Item = { ...existing, dueDate: nextDueDate, lastDoneAt: doneAt, updatedAt };
+  await scheduleRemindersForItem(updated);
   notifyItemsChanged();
-  return { ...existing, dueDate: nextDueDate, lastDoneAt: doneAt, updatedAt };
+  return updated;
 }
