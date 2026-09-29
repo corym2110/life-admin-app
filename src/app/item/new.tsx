@@ -1,27 +1,24 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { ItemForm, type ItemFormValues } from '@/components/item-form';
+import { ItemForm, type ValidatedItemFormValues } from '@/components/item-form';
 import { todayISODate } from '@/data/dueDate';
 import { createItem } from '@/data/items';
-import { DEFAULT_REMINDER_OFFSETS } from '@/types/item';
-
-const DEFAULT_VALUES: ItemFormValues = {
-  title: '',
-  category: 'home',
-  dueDate: todayISODate(),
-  repeatEnabled: false,
-  repeatEvery: '1',
-  repeatUnit: 'month',
-  reminderOffsets: DEFAULT_REMINDER_OFFSETS,
-  notes: '',
-  photoUris: [],
-};
+import { DEFAULT_REMINDER_OFFSETS, type Category, type RepeatUnit } from '@/types/item';
 
 export default function NewItemScreen() {
   const db = useSQLiteContext();
+  const params = useLocalSearchParams<{
+    title?: string;
+    category?: Category;
+    repeatEvery?: string;
+    repeatUnit?: RepeatUnit;
+    fromStarter?: string;
+  }>();
 
-  async function handleSubmit(values: ItemFormValues) {
+  const fromStarter = params.fromStarter === '1';
+
+  async function handleSubmit(values: ValidatedItemFormValues) {
     await createItem(db, {
       title: values.title.trim(),
       category: values.category,
@@ -34,5 +31,22 @@ export default function NewItemScreen() {
     router.back();
   }
 
-  return <ItemForm initialValues={DEFAULT_VALUES} submitLabel="Add item" onSubmit={handleSubmit} />;
+  return (
+    <ItemForm
+      initialValues={{
+        title: params.title ?? '',
+        category: params.category ?? 'home',
+        // Starter items never assume a due date — the user must pick one.
+        dueDate: fromStarter ? null : todayISODate(),
+        repeatEnabled: params.repeatEvery !== undefined,
+        repeatEvery: params.repeatEvery ?? '1',
+        repeatUnit: params.repeatUnit ?? 'month',
+        reminderOffsets: DEFAULT_REMINDER_OFFSETS,
+        notes: '',
+        photoUris: [],
+      }}
+      submitLabel="Add item"
+      onSubmit={handleSubmit}
+    />
+  );
 }

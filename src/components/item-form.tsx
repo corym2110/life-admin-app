@@ -18,7 +18,7 @@ const REMINDER_PRESETS = [1, 3, 7, 14, 30];
 export interface ItemFormValues {
   title: string;
   category: Category;
-  dueDate: string;
+  dueDate: string | null;
   repeatEnabled: boolean;
   repeatEvery: string;
   repeatUnit: RepeatUnit;
@@ -27,6 +27,9 @@ export interface ItemFormValues {
   photoUris: string[];
 }
 
+/** ItemFormValues after passing submit validation, where dueDate is guaranteed set. */
+export type ValidatedItemFormValues = ItemFormValues & { dueDate: string };
+
 export function ItemForm({
   initialValues,
   submitLabel,
@@ -34,7 +37,7 @@ export function ItemForm({
 }: {
   initialValues: ItemFormValues;
   submitLabel: string;
-  onSubmit: (values: ItemFormValues) => Promise<void>;
+  onSubmit: (values: ValidatedItemFormValues) => Promise<void>;
 }) {
   const theme = useTheme();
   const [values, setValues] = useState(initialValues);
@@ -76,6 +79,10 @@ export function ItemForm({
       setError('Title is required.');
       return;
     }
+    if (!values.dueDate) {
+      setError('Please select a due date.');
+      return;
+    }
     if (values.repeatEnabled) {
       const every = Number(values.repeatEvery);
       if (!Number.isInteger(every) || every <= 0) {
@@ -86,7 +93,7 @@ export function ItemForm({
     setError(null);
     setSaving(true);
     try {
-      await onSubmit(values);
+      await onSubmit(values as ValidatedItemFormValues);
     } finally {
       setSaving(false);
     }

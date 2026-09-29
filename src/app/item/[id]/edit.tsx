@@ -3,7 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { ItemForm, type ItemFormValues } from '@/components/item-form';
+import { ItemForm, type ItemFormValues, type ValidatedItemFormValues } from '@/components/item-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getItem, updateItem } from '@/data/items';
@@ -33,7 +33,7 @@ export default function EditItemScreen() {
     getItem(db, id).then(setItem);
   }, [db, id]);
 
-  async function handleSubmit(values: ItemFormValues) {
+  async function handleSubmit(values: ValidatedItemFormValues) {
     const previousPhoto = item?.photoUris[0];
     const nextPhoto = values.photoUris[0];
     if (previousPhoto && previousPhoto !== nextPhoto) {

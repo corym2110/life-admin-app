@@ -34,16 +34,17 @@ export function DateField({
   onChange,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   onChange: (isoDate: string) => void;
 }) {
   const theme = useTheme();
   const [showIOSPicker, setShowIOSPicker] = useState(false);
+  const pickerBaseValue = value ? parseISODate(value) : new Date();
 
   function open() {
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
-        value: parseISODate(value),
+        value: pickerBaseValue,
         mode: 'date',
         onChange: (_event, date) => {
           if (date) onChange(toISODate(date));
@@ -61,7 +62,9 @@ export function DateField({
       </ThemedText>
       <Pressable onPress={open}>
         <ThemedView type="backgroundElement" style={styles.field}>
-          <ThemedText type="default">{formatFriendlyDate(value)}</ThemedText>
+          <ThemedText type="default" themeColor={value ? undefined : 'textSecondary'}>
+            {value ? formatFriendlyDate(value) : 'Select a date'}
+          </ThemedText>
         </ThemedView>
       </Pressable>
 
@@ -70,7 +73,7 @@ export function DateField({
           <Pressable style={styles.backdrop} onPress={() => setShowIOSPicker(false)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.background }]}>
               <DateTimePicker
-                value={parseISODate(value)}
+                value={pickerBaseValue}
                 mode="date"
                 display="inline"
                 onChange={(_event, date) => {
