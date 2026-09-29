@@ -147,38 +147,67 @@ export async function deleteItem(db: SQLiteDatabase, id: string): Promise<void> 
   notifyItemsChanged();
 }
 
+async function insertItemRow(db: SQLiteDatabase, item: Item): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO items
+      (id, title, category, due_date, repeat_every, repeat_unit, reminder_offsets, notes, photo_uris, last_done_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    item.id,
+    item.title,
+    item.category,
+    item.dueDate,
+    item.repeat?.every ?? null,
+    item.repeat?.unit ?? null,
+    JSON.stringify(item.reminderOffsets),
+    item.notes,
+    JSON.stringify(item.photoUris),
+    item.lastDoneAt,
+    item.createdAt,
+    item.updatedAt
+  );
+}
+
+async function insertHistoryRow(db: SQLiteDatabase, entry: HistoryEntry): Promise<void> {
+  await db.runAsync(
+    'INSERT INTO history (id, item_id, done_at, note) VALUES (?, ?, ?, ?)',
+    entry.id,
+    entry.itemId,
+    entry.doneAt,
+    entry.note
+  );
+}
+
 /** Re-inserts a previously deleted item and its history exactly as they were, for Undo. */
 export async function restoreItem(db: SQLiteDatabase, item: Item, history: HistoryEntry[] = []): Promise<void> {
   await db.withTransactionAsync(async () => {
-    await db.runAsync(
-      `INSERT INTO items
-        (id, title, category, due_date, repeat_every, repeat_unit, reminder_offsets, notes, photo_uris, last_done_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      item.id,
-      item.title,
-      item.category,
-      item.dueDate,
-      item.repeat?.every ?? null,
-      item.repeat?.unit ?? null,
-      JSON.stringify(item.reminderOffsets),
-      item.notes,
-      JSON.stringify(item.photoUris),
-      item.lastDoneAt,
-      item.createdAt,
-      item.updatedAt
-    );
+    await insertItemRow(db, item);
     for (const entry of history) {
-      await db.runAsync(
-        'INSERT INTO history (id, item_id, done_at, note) VALUES (?, ?, ?, ?)',
-        entry.id,
-        entry.itemId,
-        entry.doneAt,
-        entry.note
-      );
+      await insertHistoryRow(db, entry);
     }
   });
   await scheduleRemindersForItem(item);
   notifyItemsChanged();
+}
+
+/** Wipes all items/history and replaces them with the given data, for restoring from a backup. */
+export async function replaceAllData(db: SQLiteDatabase, items: Item[], history: HistoryEntry[]): Promise<void> {
+  const existing = await listItems(db);
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM items');
+    for (const item of items) {
+      await insertItemRow(db, item);
+    }
+    for (const entry of history) {
+      await insertHistoryRow(db, entry);
+    }
+  });
+  await Promise.all(existing.map((item) => cancelRemindersForItem(item.id)));
+  await Promise.all(items.map((item) => scheduleRemindersForItem(item)));
+  notifyItemsChanged();
+}
+
+function rowToHistoryEntry(row: { id: string; item_id: string; done_at: string; note: string }): HistoryEntry {
+  return { id: row.id, itemId: row.item_id, doneAt: row.done_at, note: row.note };
 }
 
 export async function listHistoryForItem(db: SQLiteDatabase, itemId: string): Promise<HistoryEntry[]> {
@@ -186,7 +215,14 @@ export async function listHistoryForItem(db: SQLiteDatabase, itemId: string): Pr
     'SELECT * FROM history WHERE item_id = ? ORDER BY done_at DESC',
     itemId
   );
-  return rows.map((row) => ({ id: row.id, itemId: row.item_id, doneAt: row.done_at, note: row.note }));
+  return rows.map(rowToHistoryEntry);
+}
+
+export async function listAllHistory(db: SQLiteDatabase): Promise<HistoryEntry[]> {
+  const rows = await db.getAllAsync<{ id: string; item_id: string; done_at: string; note: string }>(
+    'SELECT * FROM history'
+  );
+  return rows.map(rowToHistoryEntry);
 }
 
 export async function markItemDone(

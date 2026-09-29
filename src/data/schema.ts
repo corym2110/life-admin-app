@@ -36,6 +36,16 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
     await db.execAsync('PRAGMA user_version = 1;');
   }
+
+  if (currentVersion < 2) {
+    await db.execAsync(`
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
+      );
+    `);
+    await db.execAsync('PRAGMA user_version = 2;');
+  }
 }
 
 export const DATABASE_NAME = 'life-admin.db';
