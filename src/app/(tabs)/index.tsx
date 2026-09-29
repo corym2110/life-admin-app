@@ -95,49 +95,69 @@ export default function HomeScreen() {
             </ThemedText>
           </ThemedView>
 
-          {sections && (
-            <View style={styles.statRow}>
-              <StatCard color={SECTION_COLORS.overdue} count={sections.overdue.length} label="Overdue" />
-              <StatCard color={SECTION_COLORS.dueThisMonth} count={sections.dueThisMonth.length} label="This month" />
-              <StatCard color={SECTION_COLORS.comingUp} count={sections.comingUp.length} label="Coming up" />
-            </View>
-          )}
-
           {!sections ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
               Loading…
             </ThemedText>
+          ) : items && items.length === 0 ? (
+            <View style={styles.welcome}>
+              <ThemedText type="subtitle" style={styles.centerAlign}>
+                Nothing tracked yet
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.centerAlign}>
+                Browse Categories for common maintenance tasks to add, or tap + to add your own.
+              </ThemedText>
+              <Pressable onPress={() => router.push('/categories')}>
+                <View style={[styles.welcomeButton, { backgroundColor: theme.accent }]}>
+                  <ThemedText type="smallBold" style={styles.welcomeButtonLabel}>
+                    Browse Categories
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </View>
           ) : (
-            <ThemedView style={styles.sectionsWrapper}>
-              {SECTION_CONFIG.map(({ key, title, emptyText }) => {
-                const sectionItems = sections[key];
-                return (
-                  <ThemedView key={key} style={styles.section}>
-                    <ThemedText type="smallBold" themeColor="textSecondary">
-                      {sectionItems.length > 0
-                        ? `${title.toUpperCase()} (${sectionItems.length})`
-                        : title.toUpperCase()}
-                    </ThemedText>
-                    {sectionItems.length === 0 ? (
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {emptyText}
+            <>
+              <View style={styles.statRow}>
+                <StatCard color={SECTION_COLORS.overdue} count={sections.overdue.length} label="Overdue" />
+                <StatCard
+                  color={SECTION_COLORS.dueThisMonth}
+                  count={sections.dueThisMonth.length}
+                  label="This month"
+                />
+                <StatCard color={SECTION_COLORS.comingUp} count={sections.comingUp.length} label="Coming up" />
+              </View>
+
+              <ThemedView style={styles.sectionsWrapper}>
+                {SECTION_CONFIG.map(({ key, title, emptyText }) => {
+                  const sectionItems = sections[key];
+                  return (
+                    <ThemedView key={key} style={styles.section}>
+                      <ThemedText type="smallBold" themeColor="textSecondary">
+                        {sectionItems.length > 0
+                          ? `${title.toUpperCase()} (${sectionItems.length})`
+                          : title.toUpperCase()}
                       </ThemedText>
-                    ) : (
-                      <ThemedView style={styles.rowsWrapper}>
-                        {sectionItems.map((item) => (
-                          <ItemRow
-                            key={item.id}
-                            item={item}
-                            today={today}
-                            onPress={() => router.push(`/item/${item.id}`)}
-                          />
-                        ))}
-                      </ThemedView>
-                    )}
-                  </ThemedView>
-                );
-              })}
-            </ThemedView>
+                      {sectionItems.length === 0 ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {emptyText}
+                        </ThemedText>
+                      ) : (
+                        <ThemedView style={styles.rowsWrapper}>
+                          {sectionItems.map((item) => (
+                            <ItemRow
+                              key={item.id}
+                              item={item}
+                              today={today}
+                              onPress={() => router.push(`/item/${item.id}`)}
+                            />
+                          ))}
+                        </ThemedView>
+                      )}
+                    </ThemedView>
+                  );
+                })}
+              </ThemedView>
+            </>
           )}
         </ThemedView>
       </ScrollView>
@@ -203,6 +223,24 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
     paddingTop: Spacing.six,
+  },
+  centerAlign: {
+    textAlign: 'center',
+  },
+  welcome: {
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.six,
+  },
+  welcomeButton: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: Radius.pill,
+    marginTop: Spacing.two,
+  },
+  welcomeButtonLabel: {
+    color: '#FFFFFF',
   },
   sectionsWrapper: {
     gap: Spacing.five,
